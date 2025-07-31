@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -149,9 +149,9 @@ export default function PaymentMethodsDialog({ open, onOpenChange }: PaymentMeth
             <CreditCard className="w-6 h-6" />
             <span>Payment Methods</span>
           </DialogTitle>
-          <p className="text-cabinet-grey">
+          <DialogDescription className="text-cabinet-grey">
             Manage your payment methods and wallet balance
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
         {/* Tab Navigation */}

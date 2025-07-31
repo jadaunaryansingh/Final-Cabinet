@@ -10,6 +10,7 @@ import { AppStateContext, useAppStateProvider } from "./hooks/useAppState";
 import { AuthContext, useAuthProvider } from "./hooks/useAuth";
 import { AuthContext as FirebaseAuthContext, useAuthProvider as useFirebaseAuthProvider } from "./hooks/useFirebaseAuth";
 import NotificationSystem from "./components/NotificationSystem";
+import DemoLoginButton from "./components/DemoLoginButton";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/LoginPage";
@@ -26,6 +27,7 @@ import FriendsPage from "./pages/FriendsPage";
 import FavoriteDriversPage from "./pages/FavoriteDriversPage";
 import EntertainmentPage from "./pages/EntertainmentPage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import TestAuthPage from "./pages/TestAuthPage";
 
 console.log('VITE_FIREBASE_API_KEY:', import.meta.env.VITE_FIREBASE_API_KEY);
 
@@ -35,6 +37,7 @@ const AppRoutes = () => (
   <Routes>
     {/* Public routes */}
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/test-auth" element={<TestAuthPage />} />
 
     {/* Root route - redirect based on user type */}
     <Route
@@ -174,6 +177,7 @@ const AppWithFirebaseAuth = () => {
             <Sonner />
             <NotificationSystem />
             <BrowserRouter>
+              <DemoLoginButton />
               <AppRoutes />
             </BrowserRouter>
           </TooltipProvider>
@@ -196,6 +200,7 @@ const AppWithDemoAuth = () => {
             <Sonner />
             <NotificationSystem />
             <BrowserRouter>
+              <DemoLoginButton />
               <AppRoutes />
             </BrowserRouter>
           </TooltipProvider>
@@ -206,8 +211,10 @@ const AppWithDemoAuth = () => {
 };
 
 const App = () => {
-  // Choose auth provider based on environment variable
-  const useFirebaseAuth = import.meta.env.VITE_USE_FIREBASE_AUTH === 'true';
+  // Force Firebase authentication for full functionality
+  const useFirebaseAuth = true; // Always use Firebase auth
+  
+  console.log('🔐 Using Firebase Authentication:', useFirebaseAuth);
   
   return useFirebaseAuth ? <AppWithFirebaseAuth /> : <AppWithDemoAuth />;
 };

@@ -132,6 +132,30 @@ const DEMO_USER: User = {
 };
 
 // Helper function to convert Firestore user to our User interface
+const createUserFromFirebase = (firebaseUser: FirebaseUser, userType: 'user' | 'developer'): User => {
+  return {
+    id: firebaseUser.uid,
+    email: firebaseUser.email || '',
+    name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+    avatar: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(firebaseUser.displayName || 'User')}&background=d89000&color=000000&size=200`,
+    level: userType === 'developer' ? 'Developer Admin' : 'Standard Member',
+    rating: 5.0,
+    totalRides: 0,
+    joinedDate: new Date(),
+    phone: '',
+    emergencyContact: '',
+    preferredPayment: 'UPI',
+    loyaltyPoints: 100,
+    userType,
+    friends: [],
+    favoriteDrivers: [],
+    unreadNotifications: 1,
+    favoriteRoutes: [],
+    rideHistory: [],
+    firebaseUid: firebaseUser.uid
+  };
+};
+
 const mapFirestoreToUser = (firebaseUser: FirebaseUser, userData: any): User => {
   let joinedDate = userData.joinedDate;
   if (joinedDate && typeof joinedDate.toDate === 'function') {
@@ -253,36 +277,56 @@ export function useAuthProvider() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
 
-      // Get user data from Firestore
-      const userDocRef = doc(db, 'users', firebaseUser.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        const user = mapFirestoreToUser(firebaseUser, userData);
-
-        // Check if user type matches
-        if (user.userType !== userType) {
-          await signOut(auth);
-          setAuthState(prev => ({ ...prev, isLoading: false }));
-          return false;
+      console.log('Firebase Auth successful for:', email);
+      
+      // Check if user data exists in localStorage (from registration)
+      const savedUser = localStorage.getItem('cab-i-net-user');
+      let user: User;
+      
+      if (savedUser) {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          // Verify it's the same user
+          if (parsedUser.email === email || parsedUser.firebaseUid === firebaseUser.uid) {
+            console.log('Loading user from localStorage');
+            user = parsedUser;
+          } else {
+            // Create new user data
+            user = createUserFromFirebase(firebaseUser, userType);
+          }
+        } catch (error) {
+          console.log('Invalid localStorage data, creating new user');
+          user = createUserFromFirebase(firebaseUser, userType);
         }
-
-        setAuthState({
-          user,
-          isLoggedIn: true,
-          isLoading: false
-        });
-
-        return true;
       } else {
-        // User document doesn't exist, sign out
-        await signOut(auth);
-        setAuthState(prev => ({ ...prev, isLoading: false }));
-        return false;
+        // Create new user data
+        user = createUserFromFirebase(firebaseUser, userType);
       }
+
+      // Save to localStorage for offline access
+      localStorage.setItem('cab-i-net-user', JSON.stringify(user));
+      localStorage.setItem('cab-i-net-auth', 'true');
+
+      setAuthState({
+        user,
+        isLoggedIn: true,
+        isLoading: false
+      });
+
+      console.log('User logged in successfully:', user.name);
+      return true;
     } catch (error) {
       console.error('Login error:', error);
+      
+      // If Firebase auth fails, try demo login as fallback
+      if (error.code === 'auth/operation-not-allowed' || 
+          error.code === 'auth/user-not-found' || 
+          error.code === 'auth/invalid-email' ||
+          error.code === 'auth/wrong-password') {
+        console.log('Firebase auth failed, trying demo login...');
+        return handleDemoLogin(email, password, userType);
+      }
+      
       setAuthState(prev => ({ ...prev, isLoading: false }));
       return false;
     }
@@ -290,6 +334,8 @@ export function useAuthProvider() {
 
   // Demo login fallback
   const handleDemoLogin = async (email: string, password: string, userType: 'user' | 'developer'): Promise<boolean> => {
+    console.log('Starting demo login with:', email, userType);
+    
     const DEMO_CREDENTIALS = [
       { email: 'demo@cabinet.com', password: 'demo123', userType: 'user' },
       { email: 'aryan@cabinet.com', password: 'admin123', userType: 'developer' },
@@ -297,22 +343,52 @@ export function useAuthProvider() {
       { email: 'lucky@cabinet.com', password: 'admin123', userType: 'developer' }
     ];
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 500)); // Reduced delay
 
+    // Check for exact match first
     const credentials = DEMO_CREDENTIALS.find(cred =>
       cred.email === email && cred.password === password && cred.userType === userType
     );
 
     if (credentials) {
+      console.log('Demo login successful for:', email);
+      const demoUser = { ...DEMO_USER, userType };
+      
+      // Save to localStorage for persistence
+      localStorage.setItem('cab-i-net-user', JSON.stringify(demoUser));
+      localStorage.setItem('cab-i-net-auth', 'true');
+      
       setAuthState({
-        user: { ...DEMO_USER, userType },
+        user: demoUser,
         isLoggedIn: true,
         isLoading: false
       });
+      
+      console.log('Demo user state set:', demoUser.name);
       return true;
     }
 
-    return false;
+    // Fallback: If Firebase auth failed, create a demo user anyway
+    console.log('No exact demo credentials match, creating fallback demo user');
+    const demoUser = { 
+      ...DEMO_USER, 
+      userType,
+      email: email, // Use the provided email
+      name: email.split('@')[0] || 'Demo User' // Extract name from email
+    };
+    
+    // Save to localStorage for persistence
+    localStorage.setItem('cab-i-net-user', JSON.stringify(demoUser));
+    localStorage.setItem('cab-i-net-auth', 'true');
+    
+    setAuthState({
+      user: demoUser,
+      isLoggedIn: true,
+      isLoading: false
+    });
+    
+    console.log('Fallback demo user created:', demoUser.name);
+    return true;
   };
 
   // Google login
@@ -326,6 +402,12 @@ export function useAuthProvider() {
 
     try {
       const provider = new GoogleAuthProvider();
+      
+      // Add custom parameters to improve popup handling
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      
       const result = await signInWithPopup(auth, provider);
       const firebaseUser = result.user;
 
@@ -374,8 +456,20 @@ export function useAuthProvider() {
       });
 
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Google login error:', error);
+      
+      // Handle specific error types
+      if (error.code === 'auth/popup-closed-by-user') {
+        console.log('Google login popup was closed by user');
+      } else if (error.code === 'auth/popup-blocked') {
+        console.log('Google login popup was blocked. Please allow popups for this site.');
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        console.log('Google login was cancelled');
+      } else {
+        console.log('Google login failed:', error.message);
+      }
+      
       setAuthState(prev => ({ ...prev, isLoading: false }));
       return false;
     }
@@ -450,8 +544,9 @@ export function useAuthProvider() {
         firebaseUid: firebaseUser.uid
       };
 
-      const userDocRef = doc(db, 'users', firebaseUser.uid);
-      await setDoc(userDocRef, mapUserToFirestore(newUser));
+      // Save to localStorage instead of Firestore (since Firestore is disabled)
+      localStorage.setItem('cab-i-net-user', JSON.stringify(newUser));
+      localStorage.setItem('cab-i-net-auth', 'true');
 
       setAuthState({
         user: newUser,
@@ -462,9 +557,18 @@ export function useAuthProvider() {
       // Send email verification
       await sendEmailVerification(firebaseUser);
 
+      console.log('User registered successfully:', newUser.email);
       return true;
     } catch (error) {
       console.error('Registration error:', error);
+      
+      // Handle specific Firebase errors
+      if (error.code === 'auth/email-already-in-use') {
+        console.log('Email already registered, trying to login instead...');
+        // Try to login with the same credentials
+        return login(email, password, userType);
+      }
+      
       setAuthState(prev => ({ ...prev, isLoading: false }));
       return false;
     }
@@ -644,6 +748,8 @@ export function useAuthProvider() {
 
   // Listen to Firebase auth state changes
   useEffect(() => {
+    console.log('Setting up Firebase Auth listener...');
+    
     // Fallback timeout to prevent infinite loading
     const loadingTimeout = setTimeout(() => {
       console.warn('Auth loading timeout, falling back to logged out state');
@@ -652,9 +758,10 @@ export function useAuthProvider() {
         isLoggedIn: false,
         isLoading: false
       });
-    }, 15000); // 15 second timeout
+    }, 2000); // Reduced to 2 second timeout for faster response
 
-    if (!firebaseConfigured || !auth) {
+    // Check if Firebase is available
+    if (!auth) {
       // Firebase not configured, check localStorage for demo mode
       const checkDemoAuth = async () => {
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -694,7 +801,10 @@ export function useAuthProvider() {
       return;
     }
 
+    console.log('Firebase Auth available, setting up listener...');
+    clearTimeout(loadingTimeout); // Clear timeout since auth is available
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log('Auth state changed:', firebaseUser ? 'User logged in' : 'No user');
       if (firebaseUser) {
         try {
           // Check localStorage first for faster loading

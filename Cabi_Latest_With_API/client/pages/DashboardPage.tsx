@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import FloatingChatbot from '../components/FloatingChatbot';
+import FirebaseTest from '../components/FirebaseTest';
 import { useAppState } from '../hooks/useAppState';
 import { useAuth } from '../hooks/useUnifiedAuth';
 import { 
@@ -478,6 +479,11 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Firebase Test Component - Remove this after testing */}
+      <div className="max-w-4xl mx-auto mb-8">
+        <FirebaseTest />
       </div>
 
       <Footer />

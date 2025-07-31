@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -58,9 +58,9 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
           <DialogTitle className="text-2xl font-display font-bold text-cabinet-yellow text-gradient">
             Welcome Back
           </DialogTitle>
-          <p className="text-cabinet-grey font-body text-sm">
+          <DialogDescription className="text-cabinet-grey font-body text-sm">
             Sign in to your CAB-I-NET account
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6 mt-6">

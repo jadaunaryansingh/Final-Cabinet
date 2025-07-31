@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -157,6 +157,9 @@ export default function UserProfile({ open, onOpenChange }: UserProfileProps) {
               <User className="w-6 h-6" />
               <span>User Profile</span>
             </DialogTitle>
+            <DialogDescription className="text-cabinet-grey">
+              Manage your profile, view ride history, and update settings
+            </DialogDescription>
             <Button
               onClick={handleLogout}
               variant="outline"

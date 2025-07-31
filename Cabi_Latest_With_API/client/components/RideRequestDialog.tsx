@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -118,9 +118,9 @@ export default function RideRequestDialog({ open, onOpenChange, friend }: RideRe
             <Car className="w-6 h-6" />
             <span>Request Ride</span>
           </DialogTitle>
-          <p className="text-cabinet-grey">
+          <DialogDescription className="text-cabinet-grey">
             Send a ride request to {friend.name}
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 mt-6">

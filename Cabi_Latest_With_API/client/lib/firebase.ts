@@ -19,13 +19,13 @@ const isFirebaseConfigured = () => {
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyA1YPpvErdlMlWoYMat1L0rxmvsqqVIdtY",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "cab-i-net-87713.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "cab-i-net-87713",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "cab-i-net-87713.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "169349902043",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:169349902043:web:8fc2fd21afdd8f16c1e6fe",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-V2JDVWRYXS"
 };
 
 // Initialize Firebase only if properly configured
@@ -33,55 +33,53 @@ let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;
 
-if (isFirebaseConfigured()) {
-  try {
-    // Initialize Firebase
-    app = initializeApp(firebaseConfig);
-    
-    // Initialize Firebase Authentication and get a reference to the service
-    auth = getAuth(app);
-    
-    // Initialize Firestore
-    db = getFirestore(app);
-    
-    // Optionally initialize analytics (only in browser)
-    if (typeof window !== 'undefined' && 'measurementId' in firebaseConfig) {
-      try {
-        getAnalytics(app);
-      } catch (e) {
-        // Analytics might fail in some environments (SSR, etc.)
-        console.log('Analytics not initialized:', e);
-      }
+// Always initialize Firebase since we have fallback config
+try {
+  // Initialize Firebase
+  app = initializeApp(firebaseConfig);
+  
+  // Initialize Firebase Authentication and get a reference to the service
+  auth = getAuth(app);
+  
+  // Initialize Firestore
+  db = getFirestore(app);
+  
+  // Initialize analytics (only in browser)
+  if (typeof window !== 'undefined' && firebaseConfig.measurementId) {
+    try {
+      getAnalytics(app);
+      console.log('Firebase Analytics initialized');
+    } catch (e) {
+      // Analytics might fail in some environments (SSR, etc.)
+      console.log('Analytics not initialized:', e);
     }
-    
-    // Connect to Firebase emulators ONLY in local development
-    const isLocalDevelopment = import.meta.env.DEV &&
-                               import.meta.env.VITE_USE_FIREBASE_EMULATOR === 'true' &&
-                               window.location.hostname === 'localhost';
-
-    if (isLocalDevelopment && !auth.app.options.projectId?.includes('demo')) {
-      // Only connect to Auth emulator if explicitly enabled and running locally
-      try {
-        connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
-        // connectFirestoreEmulator(db, '127.0.0.1', 8080); // DISABLED
-        console.log('Connected to Firebase Auth emulator');
-      } catch (error) {
-        // Emulators already connected or not available
-        console.log('Firebase emulators not connected:', error);
-      }
-    } else {
-      console.log('Using production Firebase services');
-    }
-    
-    console.log('Firebase initialized successfully');
-  } catch (error) {
-    console.error('Failed to initialize Firebase:', error);
-    app = null;
-    auth = null;
-    db = null;
   }
-} else {
-  console.log('Firebase not configured - using demo mode. Set VITE_USE_FIREBASE_AUTH=true and configure Firebase environment variables to enable Firebase authentication.');
+  
+  // Connect to Firebase emulators ONLY in local development
+  const isLocalDevelopment = import.meta.env.DEV &&
+                             import.meta.env.VITE_USE_FIREBASE_EMULATOR === 'true' &&
+                             window.location.hostname === 'localhost';
+
+  if (isLocalDevelopment && !auth.app.options.projectId?.includes('demo')) {
+    // Only connect to Auth emulator if explicitly enabled and running locally
+    try {
+      connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+      // connectFirestoreEmulator(db, '127.0.0.1', 8080); // DISABLED
+      console.log('Connected to Firebase Auth emulator');
+    } catch (error) {
+      // Emulators already connected or not available
+      console.log('Firebase emulators not connected:', error);
+    }
+  } else {
+    console.log('Using production Firebase services');
+  }
+  
+  console.log('Firebase initialized successfully');
+} catch (error) {
+  console.error('Failed to initialize Firebase:', error);
+  app = null;
+  auth = null;
+  db = null;
 }
 
 // Export with null checks

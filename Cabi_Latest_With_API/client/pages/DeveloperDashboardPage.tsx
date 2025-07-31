@@ -103,8 +103,63 @@ export default function DeveloperDashboardPage() {
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  if (!authState.user || authState.user.userType !== "developer") {
-    return null;
+  // Check if user is logged in and is a developer
+  if (!authState.user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="glass-morphism rounded-3xl p-12 border border-cabinet-yellow/20 text-center">
+          <div className="w-16 h-16 mx-auto mb-6 gradient-gold rounded-full flex items-center justify-center">
+            <Shield className="w-8 h-8 text-black" />
+          </div>
+          <h2 className="text-2xl font-cabinet text-white mb-4">
+            Access Denied
+          </h2>
+          <p className="text-cabinet-grey mb-6">
+            You need to be logged in to access the developer portal.
+          </p>
+          <Button
+            onClick={() => navigate('/login')}
+            className="bg-cabinet-yellow text-black hover:bg-cabinet-light-yellow"
+          >
+            Go to Login
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (authState.user.userType !== "developer") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="glass-morphism rounded-3xl p-12 border border-cabinet-yellow/20 text-center">
+          <div className="w-16 h-16 mx-auto mb-6 gradient-gold rounded-full flex items-center justify-center">
+            <Shield className="w-8 h-8 text-black" />
+          </div>
+          <h2 className="text-2xl font-cabinet text-white mb-4">
+            Developer Access Required
+          </h2>
+          <p className="text-cabinet-grey mb-6">
+            This portal is only available for developer accounts. 
+            Current user: {authState.user.name} ({authState.user.userType})
+          </p>
+          <div className="space-y-2">
+            <Button
+              onClick={() => navigate('/dashboard')}
+              className="bg-cabinet-yellow text-black hover:bg-cabinet-light-yellow"
+            >
+              Go to User Dashboard
+            </Button>
+            <Button
+              onClick={logout}
+              variant="outline"
+              className="border-cabinet-yellow/30 text-cabinet-yellow"
+            >
+              Logout
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Simulate loading
